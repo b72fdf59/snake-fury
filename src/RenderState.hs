@@ -24,7 +24,7 @@ Which would look like this:
 module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
-import Data.Array ( (//), listArray, Array, elems, array )
+import Data.Array ( (//), listArray, Array, elems, array, Ix )
 import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
@@ -75,9 +75,13 @@ RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1)
 -- >>> buildInitialBoard (BoardInfo 2 2) (1,1) (2,2)
 
 
--- | Given tye current render state, and a message -> update the render state
+-- | Given the current render state, and a message -> update the render state
 updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState = undefined
+updateRenderState rs rm = case rm of
+  RenderBoard db -> rs {board = board rs // db}
+  GameOver -> rs {gameOver = True}
+  
+
 
 {-
 This is a test for updateRenderState
@@ -104,7 +108,10 @@ RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1)
 --     Apple -> "X "
 --   In other to avoid shrinking, I'd recommend to use some charachter followed by an space.
 ppCell :: CellType -> String
-ppCell = undefined
+ppCell Empty = "- "
+ppCell Snake = "0 "
+ppCell SnakeHead = "$ "
+ppCell Apple = "X "
 
 
 -- | convert the RenderState in a String ready to be flushed into the console.
