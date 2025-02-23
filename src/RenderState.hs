@@ -66,7 +66,7 @@ buildInitialBoard
   -> Point     -- ^ initial point of the snake
   -> Point     -- ^ initial Point of the apple
   -> RenderState
-buildInitialBoard = undefined
+buildInitialBoard bi snakePos applePos = RenderState {board = emptyGrid bi // [ (snakePos, SnakeHead), (applePos, Apple) ], gameOver = False}
 
 {- 
 This is a test for buildInitialBoard. It should return 
