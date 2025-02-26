@@ -24,7 +24,7 @@ Which would look like this:
 module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
-import Data.Array ( (//), listArray, Array, elems, array, Ix )
+import Data.Array ( (//), listArray, Array, elems, array, Ix, (!) )
 import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
@@ -114,11 +114,16 @@ ppCell SnakeHead = "$ "
 ppCell Apple = "X "
 
 
+renderGameOver :: BoardInfo -> String
+renderGameOver bi = foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell Empty) "" [1..width bi] ++ "\n") "" [1..height bi]
+
+renderBoard :: BoardInfo -> Board -> String
+renderBoard bi b = foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell (b ! (i, j))) "" [1..width bi] ++ "\n") "" [1..height bi]
+
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render = undefined
-
+render bi rs = if gameOver rs then renderGameOver bi else renderBoard bi (board rs)
 {-
 This is a test for render. It should return:
 "- - - - \n- 0 $ - \n- - - X \n"
