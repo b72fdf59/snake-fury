@@ -114,16 +114,22 @@ ppCell SnakeHead = "$ "
 ppCell Apple = "X "
 
 
+renderBoard' :: BoardInfo -> (Point -> CellType) -> String
+renderBoard' boardInfo getCellType = 
+    foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell (getCellType (i,j))) "" [1..width boardInfo] ++ "\n") "" [1..height boardInfo]
+
 renderGameOver :: BoardInfo -> String
-renderGameOver bi = foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell Empty) "" [1..width bi] ++ "\n") "" [1..height bi]
+renderGameOver boardInfo = renderBoard' boardInfo (const Empty)
 
 renderBoard :: BoardInfo -> Board -> String
-renderBoard bi b = foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell (b ! (i, j))) "" [1..width bi] ++ "\n") "" [1..height bi]
+renderBoard boardInfo board = renderBoard' boardInfo (board !)
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render bi rs = if gameOver rs then renderGameOver bi else renderBoard bi (board rs)
+render boardInfo renderState = if gameOver renderState 
+    then renderGameOver boardInfo 
+    else renderBoard boardInfo (board renderState)
 {-
 This is a test for render. It should return:
 "- - - - \n- 0 $ - \n- - - X \n"

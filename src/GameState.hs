@@ -17,7 +17,7 @@ data Movement = North | South | East | West deriving (Show, Eq)
 -- | The snakeSeq is a non-empty sequence. It is important to use precise types in Haskell
 --   In first sight we'd define the snake as a sequence, but If you think carefully, an empty 
 --   sequence can't represent a valid Snake, therefore we must use a non empty one.
---   You should investigate about Seq type in haskell and we it is a good option for our porpouse.
+--   You should investigate about Seq type in haskell and we it is a good option for our purpose.
 data SnakeSeq = SnakeSeq {snakeHead :: Point, snakeBody :: Seq Point} deriving (Show, Eq)
 
 -- | The GameState represents all important bits in the game. The Snake, The apple, the current direction of movement and 
@@ -31,20 +31,26 @@ data GameState = GameState
   deriving (Show, Eq)
 
 -- | This function should calculate the opposite movement.
-opositeMovement :: Movement -> Movement
-opositeMovement = undefined
+oppositeMovement :: Movement -> Movement
+oppositeMovement North = South
+oppositeMovement South = North
+oppositeMovement East = West
+oppositeMovement West = East
 
--- >>> opositeMovement North == South
--- >>> opositeMovement South == North
--- >>> opositeMovement East == West
--- >>> opositeMovement West == East
+
+-- >>> oppositeMovement North == South
+-- >>> oppositeMovement South == North
+-- >>> oppositeMovement East == West
+-- >>> oppositeMovement West == East
 
 
 -- | Purely creates a random point within the board limits
 --   You should take a look to System.Random documentation. 
 --   Also, in the import list you have all relevant functions.
 makeRandomPoint :: BoardInfo -> StdGen -> (Point, StdGen)
-makeRandomPoint = undefined
+makeRandomPoint bi gen = let (x, gen') = randomR (1, height bi) gen
+                             (y, gen'') = randomR (1, width bi) gen'
+                         in ((x, y), gen'')
 
 {-
 We can't test makeRandomPoint, because different implementation may lead to different valid result.
@@ -53,7 +59,7 @@ We can't test makeRandomPoint, because different implementation may lead to diff
 
 -- | Check if a point is in the snake
 inSnake :: Point -> SnakeSeq  -> Bool
-inSnake = undefined
+inSnake p (SnakeSeq h b) = p == h || isJust (S.elemIndexL p b)
 
 {-
 This is a test for inSnake. It should return 
@@ -66,10 +72,13 @@ False
 -- >>> inSnake (1,2) snake_seq
 -- >>> inSnake (1,4) snake_seq
 
--- | Calculates de new head of the snake. Considering it is moving in the current direction
---   Take into acount the edges of the board
+-- | Calculates the new head of the snake. Considering it is moving in the current direction
+--   Take into account the edges of the board
 nextHead :: BoardInfo -> GameState -> Point
-nextHead = undefined
+nextHead bi (GameState (SnakeSeq (x, y) _) _ North _) = if x == 1 then (height bi, y) else (x - 1, y)
+nextHead bi (GameState (SnakeSeq (x, y) _) _ South _) = if x == height bi then (1, y) else (x + 1, y)
+nextHead bi (GameState (SnakeSeq (x, y) _) _ East _) = if y == width bi then (x, 1) else (x, y + 1)
+nextHead bi (GameState (SnakeSeq (x, y) _) _ West _) = if y == 1 then (x, width bi) else (x, y - 1)
 
 {-
 This is a test for nextHead. It should return
@@ -90,7 +99,10 @@ True
 
 -- | Calculates a new random apple, avoiding creating the apple in the same place, or in the snake body
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
-newApple = undefined
+newApple bi gs = let (p, gen) = makeRandomPoint bi (randomGen gs)
+                 in if inSnake p (snakeSeq gs) || p == applePosition gs
+                    then newApple bi gs
+                    else (p, gen)
 
 {- We can't test this function because it depends on makeRandomPoint -}
 
@@ -113,7 +125,52 @@ newApple = undefined
 -- 
 
 move :: BoardInfo -> GameState -> (Board.RenderMessage , GameState)
-move = undefined
+move bi gs = let
+    nh = nextHead bi gs
+    ss = snakeSeq gs
+    
+    -- Handle collision detection
+    handleCollision = if nh `inSnake` ss
+      then (Board.GameOver, gs)
+      else undefined -- Will be replaced below
+      
+    -- Handle apple consumption
+    handleAppleConsumption = if nh == applePosition gs
+      then let (newApplePos, gen) = newApple bi gs
+           in (newApplePos, gen)
+      else (applePosition gs, randomGen gs)
+      
+    -- Update snake sequence based on whether apple was eaten
+    updateSnakeSeq consumedApple = 
+      if consumedApple
+        then SnakeSeq nh (snakeHead ss :<| snakeBody ss)
+        else case snakeBody ss of
+          Empty -> SnakeSeq nh S.Empty
+          xs :|> x -> SnakeSeq nh (snakeHead ss :<| xs)
+    
+    -- Calculate board updates based on game state
+    calculateDelta consumedApple = 
+      if consumedApple
+        then [(newApplePos, Board.Apple), 
+              (snakeHead ss, Board.Snake), 
+              (nh, Board.SnakeHead)]
+        else case snakeBody ss of
+          Empty -> [(snakeHead ss, Board.Empty), 
+                   (nh, Board.SnakeHead)]
+          xs :|> x -> [(x, Board.Empty),
+                      (snakeHead ss, Board.Snake),
+                      (nh, Board.SnakeHead)]
+    
+    -- Extract values from handleAppleConsumption tuple
+    (newApplePos, gen) = handleAppleConsumption
+    newSnakeSeq = updateSnakeSeq (nh == applePosition gs)
+    delta = calculateDelta (nh == applePosition gs)
+    newGameState = GameState newSnakeSeq newApplePos (movement gs) gen
+    
+    -- Return final result
+    in if nh `inSnake` ss
+         then (Board.GameOver, gs)
+         else (Board.RenderBoard delta, newGameState)
 
 {- This is a test for move. It should return
 
