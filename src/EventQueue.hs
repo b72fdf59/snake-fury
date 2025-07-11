@@ -15,7 +15,7 @@ import Control.Concurrent.BoundedChan (
   tryReadChan,
   tryWriteChan,
  )
-import GameState (Movement (..))
+import GameState ()
 import qualified GameState as Snake
 import System.IO (hReady, stdin)
 

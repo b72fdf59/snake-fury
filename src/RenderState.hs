@@ -1,6 +1,5 @@
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
 
 
 {-|
@@ -24,7 +23,7 @@ Which would look like this:
 module RenderState where
 
 -- This are all imports you need. Feel free to import more things.
-import Data.Array ( (//), listArray, Array, elems, array, Ix, (!) )
+import Data.Array ( (//), Array,array,  (!) )
 import Data.Foldable ( foldl' )
 
 -- A point is just a tuple of integers.
@@ -122,7 +121,7 @@ renderGameOver :: BoardInfo -> String
 renderGameOver boardInfo = renderBoard' boardInfo (const Empty)
 
 renderBoard :: BoardInfo -> Board -> String
-renderBoard boardInfo board = renderBoard' boardInfo (board !)
+renderBoard boardInfo b = renderBoard' boardInfo (b !)
 
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
