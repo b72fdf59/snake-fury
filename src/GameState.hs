@@ -101,7 +101,7 @@ True
 newApple :: BoardInfo -> GameState -> (Point, StdGen)
 newApple bi gs = let (p, gen) = makeRandomPoint bi (randomGen gs)
                  in if inSnake p (snakeSeq gs) || p == applePosition gs
-                    then newApple bi gs
+                    then newApple bi (gs {randomGen = gen}) 
                     else (p, gen)
 
 {- We can't test this function because it depends on makeRandomPoint -}

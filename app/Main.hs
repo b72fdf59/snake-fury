@@ -12,9 +12,9 @@ import EventQueue (
   readEvent,
   writeUserInput,
  )
-import GameState (GameState (movement), move, oppositeMovement)
+import GameState (GameState (movement, snakeSeq, applePosition), SnakeSeq (snakeHead), move, oppositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState (gameOver), render, updateRenderState)
+import RenderState (BoardInfo, RenderState (gameOver), RenderMessage (GameOver, RenderBoard), render, updateRenderState)
 import System.Environment (getArgs)
 import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetEcho, stdin, stdout)
 import Control.Monad (unless)
@@ -39,7 +39,8 @@ gameloop binf gstate rstate queue = do
   let rstate' = updateRenderState rstate delta
       isGameOver = gameOver rstate'
   putStr "\ESC[2J" --This cleans the console screen
-  putStr $ render binf rstate'
+  let renderOutput = render binf rstate'
+  putStr renderOutput
   unless isGameOver $ gameloop binf gstate' rstate' queue
 
 -- | main.

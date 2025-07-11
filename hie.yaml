@@ -1,2 +1,6 @@
 cradle:
   stack:
+    - path: "./src"
+      component: "snake-fury:lib"
+    - path: "./app"
+      component: "snake-fury:exe:snake-fury"
