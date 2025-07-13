@@ -43,10 +43,10 @@ type DeltaBoard = [(Point, CellType)]
 -- | The render message represent all message the GameState can send to the RenderState
 --   Right now Possible messages are a RenderBoard with a payload indicating which cells change
 --   or a GameOver message.
-data RenderMessage = RenderBoard DeltaBoard | GameOver deriving Show
+data RenderMessage = RenderBoard DeltaBoard | GameOver | UpdateScore deriving Show 
 
 -- | The RenderState contains the board and if the game is over or not.
-data RenderState   = RenderState {board :: Board, gameOver :: Bool} deriving Show
+data RenderState   = RenderState {board :: Board, gameOver :: Bool, score::Int} deriving Show
 
 -- | Given The board info, this function should return a board with all Empty cells
 emptyGrid :: BoardInfo -> Board
@@ -65,7 +65,7 @@ buildInitialBoard
   -> Point     -- ^ initial point of the snake
   -> Point     -- ^ initial Point of the apple
   -> RenderState
-buildInitialBoard bi snakePos applePos = RenderState {board = emptyGrid bi // [ (snakePos, SnakeHead), (applePos, Apple) ], gameOver = False}
+buildInitialBoard bi snakePos applePos = RenderState {board = emptyGrid bi // [ (snakePos, SnakeHead), (applePos, Apple) ], gameOver = False, score = 0}
 
 {- 
 This is a test for buildInitialBoard. It should return 
@@ -75,11 +75,15 @@ RenderState {board = array ((1,1),(2,2)) [((1,1),SnakeHead),((1,2),Empty),((2,1)
 
 
 -- | Given the current render state, and a message -> update the render state
-updateRenderState :: RenderState -> RenderMessage -> RenderState
-updateRenderState rs rm = case rm of
-  RenderBoard db -> rs {board = board rs // db}
-  GameOver -> rs {gameOver = True}
-  
+updateRenderState :: RenderState -> [RenderMessage] -> RenderState
+updateRenderState =  foldl' processMessage
+
+
+-- | Process a single render message to update the render state
+processMessage :: RenderState -> RenderMessage -> RenderState
+processMessage rs (RenderBoard db) = rs {board = board rs // db}
+processMessage rs GameOver = rs {gameOver = True}
+processMessage rs UpdateScore = rs {score = score rs + 1}
 
 
 {-
@@ -117,16 +121,24 @@ renderBoard' :: BoardInfo -> (Point -> CellType) -> String
 renderBoard' boardInfo getCellType = 
     foldl' (\acc i -> acc ++ foldl' (\acc j -> acc ++ ppCell (getCellType (i,j))) "" [1..width boardInfo] ++ "\n") "" [1..height boardInfo]
 
+
 renderGameOver :: BoardInfo -> String
-renderGameOver boardInfo = renderBoard' boardInfo (const Empty)
+renderGameOver boardInfo = 
+  renderBoard' boardInfo (const Empty)
 
 renderBoard :: BoardInfo -> Board -> String
 renderBoard boardInfo b = renderBoard' boardInfo (b !)
 
+
+renderScore :: Int -> String
+renderScore s = "Score: " ++ show s
+
 -- | convert the RenderState in a String ready to be flushed into the console.
 --   It should return the Board with a pretty look. If game over, return the empty board.
 render :: BoardInfo -> RenderState -> String
-render boardInfo renderState = if gameOver renderState 
+render boardInfo renderState = 
+  renderScore (score renderState) ++ "\n" ++
+  if gameOver renderState 
     then renderGameOver boardInfo 
     else renderBoard boardInfo (board renderState)
 {-

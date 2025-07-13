@@ -124,16 +124,11 @@ newApple bi gs = let (p, gen) = makeRandomPoint bi (randomGen gs)
 -- We need to send the following delta: [((2,2), Apple), ((4,3), Snake), ((4,4), SnakeHead)]
 -- 
 
-move :: BoardInfo -> GameState -> (Board.RenderMessage , GameState)
+move :: BoardInfo -> GameState -> ([Board.RenderMessage] , GameState)
 move bi gs = let
     nh = nextHead bi gs
     ss = snakeSeq gs
     
-    -- Handle collision detection
-    handleCollision = if nh `inSnake` ss
-      then (Board.GameOver, gs)
-      else undefined -- Will be replaced below
-      
     -- Handle apple consumption
     handleAppleConsumption = if nh == applePosition gs
       then let (newApplePos, gen) = newApple bi gs
@@ -146,7 +141,7 @@ move bi gs = let
         then SnakeSeq nh (snakeHead ss :<| snakeBody ss)
         else case snakeBody ss of
           Empty -> SnakeSeq nh S.Empty
-          xs :|> x -> SnakeSeq nh (snakeHead ss :<| xs)
+          xs :|> _ -> SnakeSeq nh (snakeHead ss :<| xs)
     
     -- Calculate board updates based on game state
     calculateDelta consumedApple = 
@@ -169,8 +164,10 @@ move bi gs = let
     
     -- Return final result
     in if nh `inSnake` ss
-         then (Board.GameOver, gs)
-         else (Board.RenderBoard delta, newGameState)
+         then ([Board.GameOver], gs)
+         else if nh == applePosition gs
+          then ([Board.RenderBoard delta, Board.UpdateScore], newGameState)
+          else ([Board.RenderBoard delta], newGameState)
 
 {- This is a test for move. It should return
 
