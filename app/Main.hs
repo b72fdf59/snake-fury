@@ -6,18 +6,19 @@ import Control.Concurrent (
   forkIO,
   threadDelay,
  )
+import Control.Monad (unless)
 import EventQueue (
   Event (Tick, UserEvent),
   EventQueue (initialSpeed),
+  calculateSpeed,
   readEvent,
   writeUserInput,
  )
-import GameState (GameState (movement, snakeSeq, applePosition), SnakeSeq (snakeHead), move, oppositeMovement)
+import GameState (GameState (movement), move, oppositeMovement)
 import Initialization (gameInitialization)
-import RenderState (BoardInfo, RenderState (gameOver), RenderMessage (GameOver, RenderBoard), render, updateRenderState)
+import RenderState (BoardInfo, RenderState (gameOver, score), render, updateRenderState)
 import System.Environment (getArgs)
 import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetEcho, stdin, stdout)
-import Control.Monad (unless)
 
 -- The game loop is easy:
 --   - wait some time
@@ -27,7 +28,7 @@ import Control.Monad (unless)
 --   - Render into the console
 gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue -> IO ()
 gameloop binf gstate rstate queue = do
-  threadDelay $ initialSpeed queue
+  threadDelay $ calculateSpeed (score rstate) (initialSpeed queue)
   event <- readEvent queue
   let (delta, gstate') =
         case event of
@@ -38,7 +39,7 @@ gameloop binf gstate rstate queue = do
               else move binf $ gstate{movement = m}
   let rstate' = updateRenderState rstate delta
       isGameOver = gameOver rstate'
-  putStr "\ESC[2J" --This cleans the console screen
+  putStr "\ESC[2J" -- This cleans the console screen
   let renderOutput = render binf rstate'
   putStr renderOutput
   unless isGameOver $ gameloop binf gstate' rstate' queue
