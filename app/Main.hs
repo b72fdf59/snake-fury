@@ -7,9 +7,10 @@ import Control.Concurrent (
   threadDelay,
  )
 import Control.Monad (unless)
+import Data.ByteString.Builder (hPutBuilder)
 import EventQueue (
   Event (Tick, UserEvent),
-  EventQueue (initialSpeed),
+  EventQueue,
   readEvent,
   setSpeed,
   writeUserInput,
@@ -26,15 +27,15 @@ import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetE
 --   - Update the GameState
 --   - Update the RenderState based on message delivered by GameState update
 --   - Render into the console
-gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue -> IO ()
+gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue.EventQueue -> IO ()
 gameloop binf gstate rstate queue = do
-  newSpeed <- setSpeed (score rstate) queue
+  newSpeed <- EventQueue.setSpeed (score rstate) queue
   threadDelay newSpeed
-  event <- readEvent queue
+  event <- EventQueue.readEvent queue
   let (delta, gstate') =
         case event of
-          Tick -> move binf gstate
-          UserEvent m ->
+          EventQueue.Tick -> move binf gstate
+          EventQueue.UserEvent m ->
             if movement gstate == oppositeMovement m
               then move binf gstate
               else move binf $ gstate{movement = m}
@@ -42,7 +43,7 @@ gameloop binf gstate rstate queue = do
       isGameOver = gameOver rstate'
   putStr "\ESC[2J" -- This cleans the console screen
   let renderOutput = render binf rstate'
-  putStr renderOutput
+  hPutBuilder stdout renderOutput
   unless isGameOver $ gameloop binf gstate' rstate' queue
 
 -- | main.
@@ -61,6 +62,6 @@ main = do
   (binf, gameState, renderState, eventQueue) <- gameInitialization h w timeSpeed
 
   -- Game Loop. We run two different threads, one for the gameloop (main) and one for user inputs.
-  _ <- forkIO $ writeUserInput eventQueue
+  _ <- forkIO $ EventQueue.writeUserInput eventQueue
   let initialState = gameState
   gameloop binf initialState renderState eventQueue
