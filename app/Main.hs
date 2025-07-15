@@ -10,8 +10,8 @@ import Control.Monad (unless)
 import EventQueue (
   Event (Tick, UserEvent),
   EventQueue (initialSpeed),
-  calculateSpeed,
   readEvent,
+  setSpeed,
   writeUserInput,
  )
 import GameState (GameState (movement), move, oppositeMovement)
@@ -28,7 +28,8 @@ import System.IO (BufferMode (NoBuffering), hSetBinaryMode, hSetBuffering, hSetE
 --   - Render into the console
 gameloop :: BoardInfo -> GameState -> RenderState -> EventQueue -> IO ()
 gameloop binf gstate rstate queue = do
-  threadDelay $ calculateSpeed (score rstate) (initialSpeed queue)
+  newSpeed <- setSpeed (score rstate) queue
+  threadDelay newSpeed
   event <- readEvent queue
   let (delta, gstate') =
         case event of
